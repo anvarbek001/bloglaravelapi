@@ -12,6 +12,7 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users',
@@ -20,6 +21,15 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
+        }
+
+        if (User::where('email', $request->email)->exists()) {
+            return response()->json([
+                'message' => 'Bu email allaqachon ro‘yxatdan o‘tgan.',
+                'errors' => [
+                    'email' => ['Bu email allaqachon ro‘yxatdan o‘tgan.']
+                ]
+            ], 422);
         }
 
         $user = User::create([
@@ -49,6 +59,14 @@ class AuthController extends Controller
         return response()->json([
             'user' => $user,
             'token' => $token,
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json([
+            'message' => 'Chiqildi',
         ]);
     }
 }

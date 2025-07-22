@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Product;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends Controller
 {
@@ -13,9 +14,24 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::paginate(15);
+        $categoryId = $request->get('category_id');
+        $page = $request->get('page', 1);
+
+        $cacheKey = 'products_page_' . $page;
+
+        if ($categoryId) {
+            $cacheKey .= '_category_' . $categoryId;
+        }
+
+        $products = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($categoryId) {
+            $query = Product::query();
+            if ($categoryId) {
+                $query->where('category_id', $categoryId);
+            }
+            return $query->paginate(15);
+        });
         return response()->json($products);
     }
 
